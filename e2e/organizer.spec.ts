@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('capture, projects, notes, planning, and completion stay connected', async ({ page }, testInfo) => {
+test('tasks, projects, notes, planning, and completion stay connected', async ({ page }, testInfo) => {
   const errors: string[] = [];
   const dialogs: string[] = [];
   let acceptDialog = false;
@@ -18,27 +18,33 @@ test('capture, projects, notes, planning, and completion stay connected', async 
   await expect(heading('Today')).toBeVisible({ timeout: 60000 });
   await page.screenshot({ path: testInfo.outputPath('today-light.png') });
 
-  await test.step('Create a project and a scheduled task with an independent deadline', async () => {
+  await test.step('Add a task in one line', async () => {
+    await page.getByRole('textbox', { name: 'New task title' }).fill('Buy milk');
+    await button('Add').click();
+    await expect(button('Edit Buy milk')).toBeVisible();
+  });
+
+  await test.step('Create a project and a scheduled task', async () => {
     await tab('Projects');
     await button('New project').click();
     await page.getByRole('textbox', { name: 'Project name' }).fill('School design studio');
     await button('Create project').click();
     await expect(heading('Projects')).toBeVisible();
     await page.getByRole('button', { name: /School design studio, 0 of 0/ }).click();
+    await page.getByRole('button', { name: 'Quick actions' }).click();
     await button('Add a task').click();
     await page.getByRole('textbox', { name: 'Name', exact: true }).fill('Sketch the homepage');
     await page.getByRole('textbox', { name: 'Details', exact: true }).fill('Start with the mobile layout.');
-    await page.getByRole('switch', { name: 'Set a deadline' }).click();
-    await page.getByLabel('Due date', { exact: true }).fill('2026-11-10');
-    await page.getByRole('switch', { name: 'Schedule a work session' }).click();
-    await page.getByLabel('Scheduled day', { exact: true }).fill('2026-11-09');
+    await page.getByRole('tab', { name: 'Time block', exact: true }).click();
+    await page.getByLabel('Day', { exact: true }).fill('2026-11-09');
     await page.getByLabel('Start time', { exact: true }).fill('09:30');
-    await page.getByRole('textbox', { name: 'Estimated minutes' }).fill('45');
+    await button('45 min').click();
     await button('Add task').click();
     await expect(button('Edit Sketch the homepage')).toBeVisible();
   });
   await test.step('Keep project notes alongside tasks', async () => {
     await page.getByRole('tab', { name: 'Notes · 0' }).click();
+    await page.getByRole('button', { name: 'Quick actions' }).click();
     await button('Add a note').click();
     await page.getByRole('textbox', { name: 'Title', exact: true }).fill('Design decisions');
     await page.getByRole('textbox', { name: 'Your note', exact: true }).fill('Use generous spacing.');
@@ -48,38 +54,37 @@ test('capture, projects, notes, planning, and completion stay connected', async 
   });
   await test.step('Reject an overlap and show the same task on the calendar', async () => {
     await tab('Calendar');
-    await button('Add a commitment').click();
+    await button('Add').click();
+    await button('Add event').click();
     await page.getByRole('textbox', { name: 'Name', exact: true }).fill('Design critique');
-    await page.getByLabel('Scheduled day', { exact: true }).fill('2026-11-09');
+    await page.getByLabel('Day', { exact: true }).fill('2026-11-09');
     await page.getByLabel('Start time', { exact: true }).fill('09:45');
-    await button('Add commitment').click();
+    await button('30 min').click();
+    await button('Add event').click();
     await expect(page.getByRole('alert')).toContainText('overlaps');
     await page.getByLabel('Start time', { exact: true }).fill('10:30');
-    await button('Add commitment').click();
+    await button('Add event').click();
     await expect(heading('Calendar')).toBeVisible();
-    await button('Next week').click();
     await button('Monday, November 9').click();
     await expect(page.getByText('Design critique', { exact: true })).toBeVisible();
     await expect(button('Edit Sketch the homepage')).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('calendar-light.png') });
   });
-  await test.step('Capture survives reload and converts without duplication', async () => {
+  await test.step('Notes save directly and survive reload', async () => {
     await tab('Today');
-    await button('Capture a thought').click();
-    await page.getByRole('textbox', { name: 'Your thought', exact: true }).fill('Remember simpler navigation');
-    await button('Save to inbox').click();
+    await button('New note').click();
+    await page.getByRole('textbox', { name: 'Title', exact: true }).fill('Remember simpler navigation');
+    await page.getByRole('textbox', { name: 'Your note', exact: true }).fill('Keep the hierarchy simple.');
+    await button('Save note').click();
     await expect(heading('Today')).toBeVisible();
     expect((await page.reload())?.status()).toBe(200);
-    await button('Organize Remember simpler navigation').click();
-    await button('Keep as a note').click();
-    await button('Save note').click();
     await expect(button('Open note Remember simpler navigation')).toBeVisible();
-    await expect(button('Organize Remember simpler navigation')).toHaveCount(0);
   });
   await test.step('Search note bodies, complete tasks, and preserve archived projects', async () => {
+    await button('Search').click();
     await page.getByRole('textbox', { name: 'Search your space' }).fill('generous spacing');
     await expect(button('Open note Design decisions')).toBeVisible();
-    await page.getByRole('textbox', { name: 'Search your space' }).fill('');
+    await button('Search').click();
     await page.getByRole('checkbox', { name: 'Complete Sketch the homepage' }).click();
     await tab('Projects');
     await page.getByRole('button', { name: /School design studio, 1 of 1/ }).click();
@@ -95,21 +100,19 @@ test('capture, projects, notes, planning, and completion stay connected', async 
   });
   await test.step('Guard unsaved text on dismissal', async () => {
     await tab('Today');
-    await button('Quick capture').click();
-    await page.getByRole('textbox', { name: 'Your thought', exact: true }).fill('Do not discard me accidentally');
-    await Promise.all([page.waitForEvent('dialog'), button('Close capture').click()]);
-    await expect(page.getByRole('textbox', { name: 'Your thought', exact: true })).toHaveValue('Do not discard me accidentally');
+    await button('New note').click();
+    await page.getByRole('textbox', { name: 'Title', exact: true }).fill('Do not discard me accidentally');
+    await Promise.all([page.waitForEvent('dialog'), button('Close editor').click()]);
+    await expect(page.getByRole('textbox', { name: 'Title', exact: true })).toHaveValue('Do not discard me accidentally');
     acceptDialog = true;
-    await Promise.all([page.waitForEvent('dialog'), button('Close capture').click()]);
+    await Promise.all([page.waitForEvent('dialog'), button('Close editor').click()]);
     await expect(heading('Today')).toBeVisible();
     acceptDialog = false;
   });
   await test.step('Follow dark appearance and disclose unavailable AI', async () => {
     await page.emulateMedia({ colorScheme: 'dark' });
-    await expect(heading('Today')).toHaveCSS('color', 'rgb(246, 242, 250)');
+    await expect(heading('Today')).toHaveCSS('color', 'rgb(247, 243, 251)');
     await page.screenshot({ path: testInfo.outputPath('today-dark.png') });
-    await button('Ask Muuco').click();
-    await expect(page.getByText('Cloud AI is not connected', { exact: true })).toBeVisible();
   });
   expect(errors).toEqual([]);
   expect(dialogs).toHaveLength(3);
@@ -121,26 +124,26 @@ test('the first-run interface fits a narrow phone', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
   const dimensions = await page.evaluate(() => ({ content: document.documentElement.scrollWidth, viewport: window.innerWidth }));
   expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
-  await page.getByRole('button', { name: 'Capture a thought', exact: true }).click();
-  await expect(page.getByRole('textbox', { name: 'Your thought', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'New note', exact: true }).click();
+  await expect(page.getByRole('textbox', { name: 'Title', exact: true })).toBeVisible();
 });
 
-test('an overnight commitment stays visible on Today and both calendar days', async ({ page }) => {
+test('an overnight event stays visible on Today and both calendar days', async ({ page }) => {
   await page.clock.setFixedTime(new Date('2026-11-08T04:00:00Z'));
   await page.goto('/calendar');
-  await page.getByRole('button', { name: 'Add a commitment', exact: true }).click();
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  await page.getByRole('button', { name: 'Add event', exact: true }).click();
   await page.getByRole('textbox', { name: 'Name', exact: true }).fill('Overnight design session');
-  await page.getByLabel('Scheduled day', { exact: true }).fill('2026-11-08');
+  await page.getByLabel('Day', { exact: true }).fill('2026-11-08');
   await page.getByLabel('Start time', { exact: true }).fill('23:00');
-  await page.getByRole('textbox', { name: 'Duration in minutes', exact: true }).fill('120');
-  await page.getByRole('button', { name: 'Add commitment', exact: true }).click();
-  const session = page.getByRole('button', { name: 'Edit commitment Overnight design session', exact: true });
+  await page.getByRole('button', { name: '120 min', exact: true }).click();
+  await page.getByRole('button', { name: 'Add event', exact: true }).click();
+  const session = page.getByRole('button', { name: 'Edit event Overnight design session', exact: true });
   await expect(session).toBeVisible();
   await page.getByRole('tab', { name: 'Today', exact: true }).click();
   await expect(session).toBeVisible();
   await page.getByRole('tab', { name: 'Calendar', exact: true }).click();
-  await page.getByRole('button', { name: 'Next week', exact: true }).click();
   await page.getByRole('button', { name: 'Monday, November 9', exact: true }).click();
   await expect(session).toBeVisible();
-  await expect(page.getByText('Continues', { exact: true })).toBeVisible();
+  await expect(session).toContainText('spans to');
 });

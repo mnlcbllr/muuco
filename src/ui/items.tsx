@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { dateKey, formatDay, formatTime, type Event, type Note, type Task } from '../core/model';
 import { useStore } from '../data/store';
-import { Body, ErrorMessage, Icon, s } from './components';
+import { Body, ErrorMessage, Icon, IconTile, s } from './components';
 import { useTheme } from './theme';
 
 export function TaskRow({ task, compact = false }: { task: Task; compact?: boolean }) {
@@ -13,7 +13,7 @@ export function TaskRow({ task, compact = false }: { task: Task; compact?: boole
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const done = task.status === 'done';
-  const overdue = task.dueDate && task.dueDate < dateKey(store.now) && !done;
+  const overdue = Boolean(task.dueDate && task.dueDate < dateKey(store.now) && !done);
   async function toggle() {
     if (busy) return;
     setBusy(true); setError('');
@@ -21,31 +21,43 @@ export function TaskRow({ task, compact = false }: { task: Task; compact?: boole
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not update this task.'); }
     finally { setBusy(false); }
   }
-  return <View style={{ paddingVertical: compact ? 7 : 10, paddingRight: 15, borderBottomWidth: 0.5, borderBottomColor: t.border }}>
+  return <View style={{ paddingVertical: compact ? 4 : 7, paddingLeft: compact ? 8 : 10, paddingRight: compact ? 8 : 12, borderBottomWidth: 0.5, borderBottomColor: t.border }}>
     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-      <Pressable accessibilityRole="checkbox" accessibilityLabel={`${done ? 'Reopen' : 'Complete'} ${task.title}`} accessibilityState={{ checked: done, disabled: busy }} disabled={busy} onPress={() => void toggle()} style={{ width: 51, minHeight: 51, alignItems: 'center', justifyContent: 'center' }}><Icon name={done ? 'checkmark-circle' : task.status === 'in_progress' ? 'radio-button-on-outline' : 'ellipse-outline'} size={25} color={done ? t.success : task.status === 'in_progress' ? t.accent : t.secondary} /></Pressable>
-      <Pressable accessibilityRole="button" accessibilityLabel={`Edit ${task.title}`} onPress={() => router.push({ pathname: '/edit', params: { kind: 'task', id: task.id } })} style={{ flex: 1, minHeight: 51, justifyContent: 'center', gap: 5, paddingVertical: 3 }}>
-        <Body style={{ fontSize: 16, textDecorationLine: done ? 'line-through' : 'none', color: done ? t.secondary : t.text }}>{task.title}</Body>
-        {(project || task.dueDate || task.startAt) && <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-          {project && <View style={[s.row, { gap: 5 }]}><View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: project.color }} /><Body secondary style={{ fontSize: 12, lineHeight: 18 }}>{project.name}</Body></View>}
-          {task.startAt && <Body secondary style={{ fontSize: 12, lineHeight: 18 }}>{dateKey(new Date(task.startAt)) !== dateKey(store.now) ? `${formatDay(dateKey(new Date(task.startAt)))} · ` : ''}{formatTime(task.startAt)} · {task.duration}m</Body>}
-          {task.dueDate && <Body style={{ fontSize: 12, lineHeight: 18, color: overdue ? t.danger : t.secondary }}>{overdue ? 'Overdue · ' : 'Due '}{formatDay(task.dueDate)}</Body>}
+      <Pressable accessibilityRole="checkbox" accessibilityLabel={`${done ? 'Reopen' : 'Complete'} ${task.title}`} accessibilityState={{ checked: done, disabled: busy }} disabled={busy} onPress={() => void toggle()} style={{ width: compact ? 38 : 44, minHeight: compact ? 38 : 48, alignItems: 'center', justifyContent: 'center', opacity: busy ? 0.5 : 1 }}>
+        <Icon name={done ? 'checkmark-circle' : task.status === 'in_progress' ? 'radio-button-on' : 'ellipse-outline'} size={compact ? 22 : 25} color={done ? t.success : task.status === 'in_progress' ? t.accent : t.muted} />
+      </Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={`Edit ${task.title}`} onPress={() => router.push({ pathname: '/edit', params: { kind: 'task', id: task.id } })} style={{ flex: 1, minHeight: compact ? 42 : 50, justifyContent: 'center', gap: 5, paddingVertical: 3 }}>
+        <Body style={{ fontSize: compact ? 14.5 : 15.5, fontWeight: '600', textDecorationLine: done ? 'line-through' : 'none', color: done ? t.muted : t.text }}>{task.title}</Body>
+        {(project || task.dueDate || task.startAt) && <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+          {project && <View style={[s.row, { gap: 5 }]}><View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: project.color }} /><Body secondary style={{ fontSize: 11.5, lineHeight: 16 }}>{project.name}</Body></View>}
+          {task.startAt && <View style={{ borderRadius: 8, backgroundColor: t.accentTint, paddingHorizontal: 7, minHeight: 21, justifyContent: 'center' }}><Body style={{ fontSize: 11.5, lineHeight: 16, color: t.accent, fontWeight: '600' }}>{dateKey(new Date(task.startAt)) !== dateKey(store.now) ? `${formatDay(dateKey(new Date(task.startAt)))} · ` : ''}{formatTime(task.startAt)}</Body></View>}
+          {task.dueDate && <View style={{ borderRadius: 8, backgroundColor: overdue ? t.dangerSoft : t.surfaceTint, paddingHorizontal: 7, minHeight: 21, justifyContent: 'center' }}><Body style={{ fontSize: 11.5, lineHeight: 16, color: overdue ? t.danger : t.secondary, fontWeight: '600' }}>{overdue ? 'Overdue · ' : 'Due '}{formatDay(task.dueDate)}</Body></View>}
         </View>}
       </Pressable>
-      <Icon name="chevron-forward" size={15} />
+      <Icon name="chevron-forward" size={14} color={t.muted} />
     </View>
-    {!!error && <View style={{ paddingLeft: 16 }}><ErrorMessage message={error} /></View>}
+    {!!error && <View style={{ paddingLeft: 14 }}><ErrorMessage message={error} /></View>}
   </View>;
 }
+
 export function NoteRow({ note }: { note: Note }) {
   const t = useTheme();
-  return <Pressable accessibilityRole="button" accessibilityLabel={`Open note ${note.title}`} onPress={() => router.push({ pathname: '/edit', params: { kind: 'note', id: note.id } })} style={{ padding: 17, gap: 7, borderBottomWidth: 0.5, borderBottomColor: t.border }}><View style={s.between}><View style={[s.row, { flex: 1 }]}><Icon name="document-text-outline" size={20} color={t.accent} /><Body style={{ fontWeight: '500', flex: 1 }}>{note.title}</Body></View><Icon name="chevron-forward" size={15} /></View>{!!note.body && <Body secondary numberOfLines={2} style={{ fontSize: 14 }}>{note.body}</Body>}</Pressable>;
+  return <Pressable accessibilityRole="button" accessibilityLabel={`Open note ${note.title}`} onPress={() => router.push({ pathname: '/edit', params: { kind: 'note', id: note.id } })} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 13, padding: 14, borderBottomWidth: 0.5, borderBottomColor: t.border, opacity: pressed ? 0.6 : 1 })}>
+    <IconTile icon="document-text-outline" tone={t.accent} size={40} />
+    <View style={{ flex: 1, gap: 3 }}><Body style={{ fontWeight: '600' }} numberOfLines={1}>{note.title}</Body>{!!note.body && <Body secondary numberOfLines={2} style={{ fontSize: 13, lineHeight: 18 }}>{note.body}</Body>}</View>
+    <Icon name="chevron-forward" size={14} color={t.muted} />
+  </Pressable>;
 }
+
 export function EventRow({ event }: { event: Event }) {
   const t = useTheme();
   const end = new Date(Date.parse(event.startAt) + event.duration * 60000).toISOString();
-  return <Pressable accessibilityRole="button" accessibilityLabel={`Edit commitment ${event.title}`} onPress={() => router.push({ pathname: '/edit', params: { kind: 'event', id: event.id } })} style={{ padding: 18, gap: 7, borderBottomWidth: 0.5, borderBottomColor: t.border }}>
-    <View style={s.between}><View style={[s.row, { flex: 1 }]}><Icon name="lock-closed-outline" color={t.secondary} size={18} /><Body style={{ flex: 1, fontWeight: '600' }}>{event.title}</Body></View><Icon name="chevron-forward" size={15} /></View>
-    <Body secondary style={{ fontSize: 12 }}>{formatDay(dateKey(new Date(event.startAt)))} · {formatTime(event.startAt)} – {dateKey(new Date(end)) !== dateKey(new Date(event.startAt)) ? `${formatDay(dateKey(new Date(end)))} · ` : ''}{formatTime(end)}</Body>
+  return <Pressable accessibilityRole="button" accessibilityLabel={`Edit event ${event.title}`} onPress={() => router.push({ pathname: '/edit', params: { kind: 'event', id: event.id } })} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 13, padding: 14, borderBottomWidth: 0.5, borderBottomColor: t.border, opacity: pressed ? 0.6 : 1 })}>
+    <IconTile icon="lock-closed-outline" tone={t.gold} size={40} />
+    <View style={{ flex: 1, gap: 3 }}>
+      <Body style={{ flexShrink: 1, fontWeight: '600' }} numberOfLines={1}>{event.title}</Body>
+      <Body secondary style={{ fontSize: 12, lineHeight: 17 }}>{formatTime(event.startAt)} – {formatTime(end)}{dateKey(new Date(end)) !== dateKey(new Date(event.startAt)) ? ` · spans to ${formatDay(dateKey(new Date(end)))}` : ''}</Body>
+    </View>
+    <Icon name="chevron-forward" size={14} color={t.muted} />
   </Pressable>;
 }

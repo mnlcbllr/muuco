@@ -15,11 +15,9 @@ export default function RootLayout() {
     <StoreProvider>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.background } }}>
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="capture" options={{ presentation: 'modal' }} />
         <Stack.Screen name="edit" options={{ presentation: 'modal' }} />
         <Stack.Screen name="project-edit" options={{ presentation: 'modal' }} />
         <Stack.Screen name="project/[id]" />
-        <Stack.Screen name="assistant" options={{ presentation: 'modal' }} />
         <Stack.Screen name="settings" />
       </Stack>
     </StoreProvider>

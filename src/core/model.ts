@@ -10,10 +10,9 @@ export type Task = {
   createdAt: string; updatedAt: string; revision: number; sourceCaptureId: string | null;
 };
 export type Note = { id: string; title: string; body: string; projectId: string | null; updatedAt: string; revision: number; sourceCaptureId: string | null };
-export type Capture = { id: string; text: string; createdAt: string; convertedAt: string | null };
 export type Event = { id: string; title: string; startAt: string; duration: number; revision: number };
-export type Snapshot = { projects: Project[]; tasks: Task[]; notes: Note[]; captures: Capture[]; events: Event[] };
-export const emptySnapshot: Snapshot = { projects: [], tasks: [], notes: [], captures: [], events: [] };
+export type Snapshot = { projects: Project[]; tasks: Task[]; notes: Note[]; events: Event[] };
+export const emptySnapshot: Snapshot = { projects: [], tasks: [], notes: [], events: [] };
 export type TaskInput = Pick<Task, 'title' | 'details' | 'projectId' | 'status' | 'dueDate' | 'startAt' | 'duration' | 'remind'>;
 
 export function dateKey(date: Date): string {

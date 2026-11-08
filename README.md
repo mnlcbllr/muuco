@@ -4,13 +4,11 @@ A mobile-first personal organizer with an iOS-inspired interface and a purple ow
 
 ## Implemented
 
-- Today: quick capture, inbox, unfinished tasks, notes, and local search.
-- Projects: fixed kanban columns, completion counts, notes, and reversible archiving.
-- Calendar: week navigation, a daily agenda, manual task blocks, and fixed commitments.
-- Local free-slot suggestions: checks 9 am–6 pm in 15-minute steps; saves only after approval. This is **not AI**.
-- Separate task deadlines and scheduled times, overlap validation, and stale-edit protection.
-- Local task-start reminders on mobile, with permission handling, private notification text, and reconciliation when the app opens.
-- System light/dark appearance, native mobile tabs, native date/time controls, and guarded unsaved forms.
+- Today: an adaptive Muuco mood banner, one-line task add, unfinished tasks, notes, and optional search.
+- Projects: a simple project list with task/note counts and reversible archiving.
+- Calendar: tappable month grid and a daily agenda of time blocks, events, and due tasks.
+- One clear `When` choice per task: no date, due date, or time block. Overlap validation and stale-edit protection stay in the data layer.
+- System light/dark appearance, a shared floating tab bar, native date/time controls, and guarded unsaved forms.
 - Native encrypted SQLite with a device-protected key. The app refuses an unencrypted native fallback.
 - Original supplied mascot artwork in `assets/brand/` and derived app/avatar/adaptive icon assets.
 
@@ -56,7 +54,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Playwright starts the web preview if needed and checks capture conversion, persistence after reload, projects and notes, scheduling conflicts, calendar linkage, completion, archiving, unsaved-input protection, dark appearance, and a narrow viewport. Screenshots are saved under the ignored `test-results/` directory. These are browser checks, not native iPhone/Android tests.
+Playwright starts the web preview if needed and checks one-line task add, note persistence after reload, projects and notes, scheduling conflicts, calendar linkage, completion, archiving, unsaved-input protection, dark appearance, and a narrow viewport. Screenshots are saved under the ignored `test-results/` directory. These are browser checks, not native iPhone/Android tests.
 
 Tests exercise date/time handling (including DST), conflict checks, scheduling, reminder eligibility, and production repository SQL against Node's real SQLite engine. They do not replace SQLCipher/native-device tests.
 
@@ -68,14 +66,18 @@ Tests exercise date/time handling (including DST), conflict checks, scheduling, 
 - `src/data/`: schema migrations, serialized SQLite operations, device encryption, and platform reminder integration.
 - `tests/`: domain and SQLite regression tests.
 
-One task row owns its single scheduled work session for this first version. `dueDate` is a local calendar date; `startAt` is an absolute ISO timestamp. There are no duplicate per-screen task records or cached progress percentages. Multi-session tasks would justify a separate block table later.
+One task row owns its single scheduled work session for this first version. `dueDate` is a local calendar date; `startAt` is an absolute ISO timestamp. There are no duplicate per-screen task records or cached progress percentages. Multi-session tasks would justify a separate block table later. The old capture inbox is retired; any unconverted captures are migrated into notes when the database opens.
+
+## Muuco moods
+
+The Today banner picks one of ten moods from open work, tasks completed today, overdue load, planned time, notes, and time of day. The selection and banner copy live in `src/ui/mood.ts`; the transparent artwork is in `assets/brand/moods/`, derived from `assets/brand/sticker-sheet.png`. The wide cliff-top banner is drawn in `assets/brand/banner-landscape.svg` and exported to `banner-landscape.png`.
 
 ## Privacy and current limitations
 
-- **No cloud AI is connected.** The assistant screen says so explicitly. No provider credentials, personal-content uploads, remote push tokens, analytics, accounts, or sync are implemented. Connecting cloud AI needs a protected authenticated gateway, provider/retention choices, spending controls, and explicit context-sharing consent.
+- **No cloud AI is connected.** No AI features are exposed. No provider credentials, personal-content uploads, remote push tokens, analytics, accounts, or sync are implemented.
 - **Encrypted backup/export and restore are not implemented. Do not store irreplaceable information as its only copy in this development build.** Uninstalling can lose data and its device key. Android automatic app backup is disabled. iOS backup/recovery behavior still needs a release review; device-bound keys must not be treated as a recovery solution.
-- Reminders currently fire at scheduled task starts, not deadlines. The nearest 60 eligible reminders are registered. Later reminders require another app open. System permissions, force-stop, battery restrictions, and focus settings affect delivery; exact alarm timing is not promised.
-- There is one work session per task, no recurring tasks, no external calendar access, and no multi-device sync. The assistant cannot know commitments you have not entered.
+- Reminder scheduling infrastructure remains for existing task data, but the simplified task form does not expose reminder toggles. Reminders fire at scheduled task starts, not deadlines. System permissions, force-stop, battery restrictions, and focus settings affect delivery; exact alarm timing is not promised.
+- There is one work session per task, no recurring tasks, no external calendar access, and no multi-device sync.
 - Search scans the loaded personal workspace, rather than maintaining a second index. Pagination/FTS can follow measured data-volume needs.
 - Real Android and iPhone testing is still required for encryption, reminders after reboot, keyboard/sheet behavior, accessibility, and release offline operation.
 - The current SDK-compatible tooling dependency tree reports moderate `glob`/`minimatch` denial-of-service advisories. They are in the build/lint tooling chain, not an organizer feature. Do not run `npm audit fix --force`: npm currently proposes an incompatible Expo downgrade. Review upstream fixes before release.

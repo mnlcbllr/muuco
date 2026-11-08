@@ -25,8 +25,24 @@ const input: TaskInput = { title: 'Finish report', details: '', status: 'todo', 
 
 test('migrations are idempotent and keep existing data', async () => {
   const { native, db } = database();
-  try { await migrate(db); const repo = repository(db); await repo.addCapture('one', 'Remember this'); await migrate(db); assert.equal((await repo.snapshot()).captures[0].text, 'Remember this'); }
+  try { await migrate(db); const repo = repository(db); await repo.saveProject('project', 'Keep me', '#7560AF'); await migrate(db); assert.equal((await repo.snapshot()).projects[0].name, 'Keep me'); }
   finally { native.close(); }
+});
+test('legacy captures become notes exactly once', async () => {
+  const { native, db } = database();
+  try {
+    await migrate(db); const repo = repository(db);
+    native.prepare('INSERT INTO captures (id,text,createdAt) VALUES (?,?,?)').run('old', 'A loose thought\nwith detail', '2026-01-01T00:00:00Z');
+    await migrate(db);
+    const notes = (await repo.snapshot()).notes;
+    assert.equal(notes.length, 1);
+    assert.equal(notes[0].title, 'A loose thought');
+    assert.equal(notes[0].body, 'A loose thought\nwith detail');
+    const capture = native.prepare('SELECT convertedAt FROM captures WHERE id=?').get('old') as { convertedAt: string | null };
+    assert.ok(capture.convertedAt);
+    await migrate(db);
+    assert.equal((await repo.snapshot()).notes.length, 1);
+  } finally { native.close(); }
 });
 test('a newer database is rejected rather than overwritten', async () => {
   const { native, db } = database();
@@ -37,24 +53,6 @@ test('titles containing SQL syntax are stored as content', async () => {
   const { native, db } = database();
   try { await migrate(db); const repo = repository(db); await repo.saveTask('one', { ...input, title: "Robert'); DROP TABLE tasks;--" }); assert.equal((await repo.snapshot()).tasks[0].title, "Robert'); DROP TABLE tasks;--"); }
   finally { native.close(); }
-});
-test('capture conversion is atomic and cannot happen twice', async () => {
-  const { native, db } = database();
-  try {
-    await migrate(db); const repo = repository(db); await repo.addCapture('capture', 'A thought');
-    await repo.saveTask('task', input, undefined, 'capture');
-    await assert.rejects(repo.saveNote('note', 'A thought', 'Body', null, undefined, 'capture'), /already been organized/);
-    const state = await repo.snapshot(); assert.equal(state.captures.length, 0); assert.equal(state.tasks.length, 1); assert.equal(state.notes.length, 0);
-    assert.equal((native.prepare('SELECT text FROM captures WHERE id=?').get('capture') as { text: string }).text, 'A thought');
-  } finally { native.close(); }
-});
-test('failed conversion restores the capture and creates no task', async () => {
-  const { native, db } = database();
-  try {
-    await migrate(db); const repo = repository(db); await repo.addCapture('capture', 'Keep me');
-    await assert.rejects(repo.saveTask('task', { ...input, projectId: 'missing' }, undefined, 'capture'));
-    const state = await repo.snapshot(); assert.equal(state.captures.length, 1); assert.equal(state.tasks.length, 0);
-  } finally { native.close(); }
 });
 test('stale edits cannot overwrite newer task changes', async () => {
   const { native, db } = database();

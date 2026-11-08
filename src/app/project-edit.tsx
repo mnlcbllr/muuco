@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
 import { projectColors } from '../core/model';
 import { useStore } from '../data/store';
-import { Action, Body, Empty, ErrorMessage, Field, Header, Icon, IconButton, Screen } from '../ui/components';
+import { Action, Body, Card, Empty, ErrorMessage, Eyebrow, Field, Header, Icon, IconButton, Screen } from '../ui/components';
 import { confirm } from '../ui/confirm';
 import { useEditorGuard } from '../ui/use-editor';
 import { useTheme } from '../ui/theme';
@@ -36,7 +36,25 @@ export default function ProjectEditor() {
     catch { setError('Could not update the project.'); }
     finally { setBusy(false); }
   }
-  return <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}><Screen><Header title={original ? 'Edit project' : 'A home for your work.'} back right={<IconButton name="close" label="Close project editor" onPress={() => router.canGoBack() ? router.back() : router.replace('/projects')} />} />
-    {id && !original ? <Empty title="Project not found" detail="Your other projects have not been changed." /> : <><Field label="Project name" value={name} onChange={setName} placeholder="My next good thing" /><Body secondary>Start simple. Add your tasks and notes as you go.</Body><View style={{ gap: 12 }}><Body secondary style={{ fontSize: 13, fontWeight: '600' }}>A little color</Body><View style={{ flexDirection: 'row', gap: 14 }}>{projectColors.map((choice, index) => <Pressable key={choice} accessibilityRole="button" accessibilityLabel={['Purple', 'Blue', 'Amber', 'Green'][index]} accessibilityState={{ selected: choice === color }} onPress={() => setColor(choice)} style={{ width: 52, height: 52, borderRadius: 17, backgroundColor: choice, alignItems: 'center', justifyContent: 'center', borderWidth: choice === color ? 3 : 0, borderColor: t.text }}>{choice === color && <Icon name="checkmark" color="#FFFFFF" />}</Pressable>)}</View></View><ErrorMessage message={error} /><Action title={busy ? 'Saving…' : original ? 'Save project' : 'Create project'} disabled={busy} onPress={() => void save()} />{original && <><Action secondary title={original.archived ? 'Restore project' : 'Archive project'} disabled={busy || dirty} onPress={() => void archive()} />{dirty && <Body secondary style={{ fontSize: 12 }}>Save your edits before changing the archive status.</Body>}</>}</>}
+  return <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}><Screen footer={<View style={{ flex: 1 }}><Action title={busy ? 'Saving…' : original ? 'Save project' : 'Create project'} disabled={busy} onPress={() => void save()} /></View>}>
+    <Header eyebrow="Project" title={original ? 'Edit project' : 'A home for your work.'} right={<IconButton name="close" label="Close project editor" onPress={() => router.canGoBack() ? router.back() : router.replace('/projects')} />} />
+    {id && !original ? <Empty title="Project not found" detail="Your other projects have not been changed." /> : <>
+      <Card style={{ padding: 16, gap: 15 }}>
+        <Field label="Project name" value={name} onChange={setName} placeholder="My next good thing" />
+        <View style={{ gap: 11 }}>
+          <Eyebrow>A little color</Eyebrow>
+          <View style={{ flexDirection: 'row', gap: 12 }}>{projectColors.map((choice, index) => <Pressable key={choice} accessibilityRole="button" accessibilityLabel={['Purple', 'Blue', 'Amber', 'Green'][index]} accessibilityState={{ selected: choice === color }} onPress={() => setColor(choice)} style={{ width: 52, height: 52, borderRadius: 18, backgroundColor: choice, alignItems: 'center', justifyContent: 'center', borderWidth: choice === color ? 3 : 0, borderColor: t.surface, boxShadow: choice === color ? '0px 0px 0px 2px rgba(28,22,38,0.18)' : undefined }}>{choice === color && <Icon name="checkmark" color="#FFFFFF" size={22} />}</Pressable>)}</View>
+        </View>
+      </Card>
+      <Card style={{ padding: 15, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: t.accentTint, borderWidth: 1, borderColor: t.accentSoft }}>
+        <Icon name="sparkles-outline" color={t.accent} />
+        <Body style={{ flex: 1, fontSize: 13.5, lineHeight: 19 }}>Start simple. Add your tasks and notes as you go.</Body>
+      </Card>
+      <ErrorMessage message={error} />
+      {original && <>
+        <Action secondary title={original.archived ? 'Restore project' : 'Archive project'} disabled={busy || dirty} onPress={() => void archive()} />
+        {dirty && <Body secondary style={{ fontSize: 12, textAlign: 'center' }}>Save your edits before changing the archive status.</Body>}
+      </>}
+    </>}
   </Screen></KeyboardAvoidingView>;
 }
