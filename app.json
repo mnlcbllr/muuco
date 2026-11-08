@@ -1,25 +1,59 @@
 {
   "expo": {
-    "name": "muuco",
+    "name": "Muuco",
     "slug": "muuco",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "scheme": "muuco",
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#2D204E",
+        "foregroundImage": "./assets/brand/adaptive-foreground.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": true,
+      "allowBackup": false,
+      "package": "com.anonymous.muuco"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/brand/avatar.png",
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "asyncRoutes": false
+        }
+      ],
+      [
+        "expo-sqlite",
+        {
+          "useSQLCipher": true
+        }
+      ],
+      "expo-secure-store",
+      "@react-native-community/datetimepicker",
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "enableRemoteNotifications": false
+        }
+      ]
+    ],
+    "extra": {
+      "router": {
+        "asyncRoutes": false
+      },
+      "eas": {
+        "projectId": "f7336299-5b18-484f-b911-056d903cebb9"
+      }
     }
   }
 }
